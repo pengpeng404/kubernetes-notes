@@ -81,6 +81,10 @@ echo 100000 > cpu.cfs_quota_us
 # 控制该死循环cpu资源为100%
 ```
 
+在 `/sys/fs/cgroup/cpu` 目录中，只有像
+`system.slice`、`docker`、`user.slice`、`init.scope`
+才是代表不同的cgroup目录，
+用于隔离和管理不同组的进程或任务的CPU资源。
 
 
 # Memory子系统
