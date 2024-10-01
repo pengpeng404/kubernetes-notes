@@ -10,7 +10,7 @@
 lsns -t <type>
 # 查看某进程的 ns 可以查看指定进程的各种命名空间（namespace）实例
 ls -la /proc/<pid>/ns/
-# 进入某个 ns 执行命令
+# 进入某个进程的命名空间 并在该进程的资源环境中执行命令
 nsenter -t <pid> -n ip addr
 ```
 
