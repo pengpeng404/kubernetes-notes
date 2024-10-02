@@ -7,7 +7,7 @@ docker run -it centos bash
 ```shell
 docker pull centos
 ```
-从 dockerhub 镜像仓库拉下来 
+从 dockerhub 镜像仓库拉下来
 ，实际上就是一个tar包加描述文件
 ，然后解压这个tar包，把这个解压的文件作为进程的 rootfs
 ，让这个进程起来
@@ -25,6 +25,3 @@ docker ps
 # 查看容器细节
 docker inspect <containerid>
 ```
-
-
-
