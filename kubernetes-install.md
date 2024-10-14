@@ -262,6 +262,9 @@ kubectl get node -A
 ```shell
 ctr -n k8s.io images pull
 ctr -n k8s.io images tag
+
+ctr -n k8s.io images import my-image.tar
+
 ```
 
 
