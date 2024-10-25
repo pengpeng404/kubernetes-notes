@@ -18,15 +18,15 @@ https://releases.ubuntu.com/20.04/
 
 ---
 
-- step 1 安装linux系统 安装过程中 选择安装 SSH 工具 其余默认选项 安装完成后 关机
+- step 1 安装 linux 系统 安装过程中 选择安装 SSH 工具 其余默认选项 安装完成后 关机
 - step 2 配置 VirtualBox 的网络适配器（设置网卡 1 为 NAT 网络 2 为 Host-Only）
 - step 3 进入虚拟机并编辑 /etc/netplan/00-installer-config.yaml 来配置虚拟机的网络接口 IP
 - step 4 保存并应用网络配置，重启网络服务后即可使用
 
-~~~shell
+```shell
 # sudo su 进入 root 模式
 # nano ctrl + o enter 保存修改 ctrl + x 退出
-sudo nano /etc/netplan/00-installer-config.yaml
+nano /etc/netplan/00-installer-config.yaml
 # 每个主机单独配置 IP
 network:
   ethernets:
@@ -37,45 +37,52 @@ network:
       addresses:
         - 192.168.34.101/24
   version: 2
-  
-sudo netplan apply
-~~~
 
-~~~shell
-#!/bin/bash
+netplan apply
+```
+
+```shell
 # 更新包列表并安装 chrony
 sudo apt update && sudo apt install -y chrony
+```
+
+```shell
 # 备份原始的配置文件
 sudo cp /etc/chrony/chrony.conf /etc/chrony/chrony.conf.bak
 # 写入 server ntp.aliyun.com 配置到 chrony.conf
-sudo bash -c 'echo "server ntp.aliyun.com iburst" >> /etc/chrony/chrony.conf'
+bash -c 'echo "server ntp.aliyun.com iburst" >> /etc/chrony/chrony.conf'
 # 启动并启用 chrony 服务
 sudo systemctl start chrony
 sudo systemctl enable chrony
+```
+
+```shell
 # 打印 chrony 状态
 sudo systemctl status chrony
+```
+
+```shell
 # 验证同步状态
 timedatectl
 date
-~~~
+```
 
 ## Install kubernetes
 
-
 ### 关闭防火墙
 
-~~~sh
+```sh
 service ufw stop
 update-rc.d ufw defaults-disabled
 
 swapoff -a
 sed -ri 's/.*swap.*/#&/' /etc/fstab
-~~~
+```
 
 
 ### 系统优化
 
-~~~sh
+```shell
 sudo cat > /etc/sysctl.d/k8s_better.conf << EOF
 net.birdge.bridge-nf-call-iptables=1
 net.bridge.bridge-nf-call-ip6tables=1
@@ -95,13 +102,15 @@ modprobe br_netfilter
 lsmod | grep conntrack
 modprobe nf_conntrack
 sysctl -p /etc/sysctl.d/k8s_better.conf
-~~~
+```
 
 ### 开启 IPVS
-~~~sh
+```sh
 # 安装依赖包
 apt-get install -y conntrack ipvsadm ipset jq iptables curl sysstat wget vim net-tools git
+```
 
+```shell
 ## 开启 IPVS 转发
 modprobe br_netfilter
 
@@ -120,22 +129,25 @@ chmod 755 /etc/sysconfig/modules/ipvs.modules
 bash /etc/sysconfig/modules/ipvs.modules
 
 lsmod | grep -e ip_vs -e nf_conntarck
-~~~
+```
 
 ### containerd
 
 https://github.com/containerd/containerd/releases/download/v1.7.20/cri-containerd-cni-1.7.20-linux-amd64.tar.gz
 
-~~~sh
+```sh
 # 解压根目录
 tar -zxvf xxxxx -C /
+```
 
+```shell
 # 创建配置目录
 mkdir -p /etc/containerd
-
 # 生成默认配置文件
 containerd config default > /etc/containerd/config.toml
+```
 
+```shell
 # 使用 nano 编辑器进行手动修改
 sudo nano /etc/containerd/config.toml
 
@@ -149,19 +161,23 @@ sandbox_image = "k8s.gcr.io/pause:3.6"
 # 修改为：
 sandbox_image = "registry.aliyuncs.com/google_containers/pause:3.9"
 
+# 修改容器镜像仓库
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["hwcloud"]
+```
+
+```shell
 # 设置 containerd 开机启动并立即启动服务
 systemctl enable containerd
 systemctl start containerd
-
 # 列出 containerd 管理的镜像
 ctr images ls
-
 # 查看 runc 版本
 runc --version
-~~~
+```
 
 ### 配置 overlay 转发
-~~~sh
+```sh
 # 创建 /etc/modules-load.d/containerd.conf 文件并写入内容
 cat << EOF > /etc/modules-load.d/containerd.conf
 overlay
@@ -175,33 +191,45 @@ sudo modprobe br_netfilter
 # 验证模块是否正确加载
 lsmod | grep overlay
 lsmod | grep br_netfilter
-~~~
+```
 
 
 ### 安装 k8s 1.30 aliyun
 
 
-~~~sh
+```sh
 # 根据阿里云镜像仓库的步骤来
 sudo mkdir -p /etc/apt/keyrings
 apt-get update && apt-get install -y apt-transport-https
+```
+
+```shell
 curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.30/deb/Release.key | \
     gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.30/deb/ /" | \
     tee /etc/apt/sources.list.d/kubernetes.list
+```
+
+```shell
 apt-get update
+```
+
+```shell
 apt-get install -y kubelet kubeadm kubectl
+```
+
+```shell
 # 验证 K8S 版本
 kubelet --version
 kubectl version --client
 
 # 关闭自动更新
 apt-mark hold kubelet kubeadm kubectl
-~~~
+```
 
 ### Cgroup
 
-~~~sh
+```sh
 # 配置 kubelet 使用 systemd 作为 cgroup 驱动
 sudo bash -c 'echo KUBELET_EXTRA_ARGS="--cgroup-driver=systemd" > /etc/sysconfig/kubelet'
 
@@ -210,15 +238,16 @@ sudo systemctl enable kubelet
 
 # 启动 kubelet 服务
 sudo systemctl start kubelet
-~~~
+```
 
-~~~sh
+```sh
 # 查看 K8S 所需要的镜像
-kubeadm config images list --kubernetes-version=v1.30.5
+kubeadm config images list --kubernetes-version=v1.30.6
 # 拉取镜像
 kubeadm config images pull --image-repository registry.aliyuncs.com/google_containers
+```
 
------------------------------------------------------------------
+```shell
 # K8S 初始化 只有 master 节点初始化 其他节点加入 master
 kubeadm init --kubernetes-version=v1.30.4 --pod-network-cidr=10.224.0.0/16 --apiserver-advertise-address=192.168.34.101 --image-repository registry.aliyuncs.com/google_containers --ignore-preflight-errors=all
 
@@ -227,17 +256,15 @@ sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
------------------------------------------------------------------
 
 # node 节点加入 master
-
-~~~
+```
 
 ### 安装 calico
 
 https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/calico.yaml
 
-~~~sh
+```sh
 # 注意 yaml 文件格式
 # 修改 calico
     # - name: CALICO_IPV4POOL_CIDR
@@ -255,20 +282,6 @@ cat calico.yaml | grep image
 kubectl apply -f calico.yaml
 kubectl get pod -n kube-system -o wide
 kubectl get node -A
-~~~
-
-
-```shell
-
-nano /etc/containerd/config.toml
-
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["httpoud.com"]
-
-systemctl daemon-reload
-systemctl restart containerd
-
-
 ```
 
 
@@ -287,25 +300,12 @@ ctr -n k8s.io images import my-image.tar
 
 ```shell
 visudo
-
-cadmin ALL=(ALL) NOPASSWD:ALL
-
-
+#cadmin ALL=(ALL) NOPASSWD:ALL
 
 sudo nano ~/.bashrc
-
-alias k="kubectl"
-alias ks="kubectl -n kube-system"
-
+#alias k="kubectl"
+#alias ks="kubectl -n kube-system"
 source ~/.bashrc
-
-```
-
-
-
-```shell
-
-this
 ```
 
 

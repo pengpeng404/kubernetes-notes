@@ -5,20 +5,27 @@
 - 外部流量入站 --> ingress
 
 
-kubernetes 网络模型设计的基础原则是：
-- 所有的 pod 能够不通过 NAT 就能互相访问
-- 所有的 node 能够不通过 NAT 就能互相访问
-- 容器内看到的 IP 地址和外部组件看到的容器 IP 是一样的
+`kubernetes` 网络模型设计的基础原则是：
+- 所有的 `pod` 能够不通过 `NAT` 就能互相访问
+- 所有的 `node` 能够不通过 `NAT` 就能互相访问
+- 容器内看到的 `IP` 地址和外部组件看到的容器 `IP` 是一样的
 
-IP 地址是以 pod 为单位进行分配的 每个 pod 都有一个独立的 IP 地址 Pod 内的所有容器
-可以通过 localhost:port 访问对方
+以上就是 `CNI` 插件实现的功能
 
+`IP` 地址是以 `pod` 为单位进行分配的 每个 `pod` 都有一个独立的 `IP` 地址 `Pod` 内的所有容器
+可以通过 `localhost:port` 访问对方
 
 
 ### CNI 插件分类和常见插件
-- IPAM：IP 分配
+- `IPAM`：`IP` 地址分配
 - 主插件：网卡配置
-  - bridge
+  - `bridge`：创建一个网桥 把主机端口和容器端口插入网桥
+  - `ipvlan`：为容器添加 `ipvlan` 网口
+  - `loopback`：设置 `loopback`
+- `Meta`：附加功能
+  - `portmap`：主机端口与容器端口映射
+  - `bandwidth`：限流
+  - `firewall`：防火墙规则
 
 
 
@@ -28,28 +35,29 @@ IP 地址是以 pod 为单位进行分配的 每个 pod 都有一个独立的 IP
 ```shell
 # 默认的 CNI 配置目录
 cd /etc/cni/net.d/
-cat 
+cat /etc/cni/net.d/10-calico.conflist
+# calico 插件配置文件
 
 # 编译好的二进制文件
 cd /opt/cni/bin/
+ls /opt/cni/bin/
+#bandwidth  calico-ipam  firewall     host-local  macvlan  sbr     tuning
+#bridge     dhcp         flannel      ipvlan      portmap  static  vlan
+#calico     dummy        host-device  loopback    ptp      tap     vrf
 
 # kubelet 掉用 cni 接口的时候 调用了本地的二进制文件
-# 
-
-
 ```
 
-比如要启动一个容器，运行时要调用 cni 插件 调用的时候是个链
-
-先调用 ipam 做 ip 分配 为这个 pod 分配一个 ip
-
-主的plugin 会把这个 ip 分配给这个 容器的 ns
-
-然后把结果告诉 cri 
-
-containerruntime就会把这个ip告诉 kubelet 再上报给apiserver
-
-apiserver把ip写入状态
+比如要启动一个容器，
+运行时要调用 `cni` 插件，
+调用的时候是个链，
+先调用 `ipam` 做 `ip` 分配，
+为这个 `pod` 分配一个 `ip`，
+然后把这个 `ip` 分配给这个容器的 `ns`，
+然后把结果告诉 `cri`，
+`cri` 就会把这个 `ip` 告诉 `kubelet`，
+`kubelet` 再上报给 `apiserver`，
+`apiserver` 把 `ip` 写入状态
 
 
 
@@ -62,13 +70,19 @@ apiserver把ip写入状态
 
 ### CNI Plugin
 
-- Calico
-- Cilium 看好 规模不是很大 效率更好
+- `Calico`
+- `Cilium` 看好 规模不是很大 效率更好
 
 
 
 
 ## Calico
+
+![calico](images/calico.png)
+
+
+
+
 
 ```shell
 ks get ds
@@ -91,10 +105,6 @@ ks get po calico-node-cznt4 -oyaml
 
 # 负责把 Calico 的插件复制到主机 cni 目录
 # 使用一个 init container 把文件拷贝到主机文件目录
-
-
-
-
 ```
 
 
@@ -102,16 +112,9 @@ ks get po calico-node-cznt4 -oyaml
 
 ### Calico VXLan
 
-主机上有一个 vxlan 设备
-
-```shell
-ip a
+![data](images/data.png)
 
 
-```
-
-
-一步一步看数据面
 
 ```shell
 k get crd
@@ -138,6 +141,8 @@ k get ippools.crd.projectcalico.org -oyaml
 k get ipamblocks.crd.projectcalico.org -oyaml
 # 用来记录每个节点的 cidr 以及分出去的 ip
 # 同时也记录了该 ip 是哪个节点上的哪个 pod
+# cidr: 10.244.166.128/26
+
 
 k get ipamhandles.crd.projectcalico.org
 #NAME                                                                               AGE
@@ -168,7 +173,7 @@ k get ipamhandles.crd.projectcalico.org k8s-pod-network.204a152f2a239238ef67ab9f
 #  handleID: k8s-pod-network.204a152f2a239238ef67ab9f043d7b7afffa49ef0a5a9ee3c32c87e860f5bc71
 ```
 
-整个数据链路是怎么通的
+**整个数据链路是怎么通的？**
 
 BGP 互相交换路由
 
@@ -233,8 +238,6 @@ ip r
 
 # 这就是同主机下不同 pod 之间如何通讯 在主机上的路由表中直接传到 veth 的口
 # 直接到目标 pod
-
-
 ```
 
 
@@ -263,7 +266,6 @@ ip r
 # 这两条数据就是通过 bird daemon 互相交换路由表来的
 # blackhole 10.244.104.0/26 proto bird 
 # 读这个 balckhole 用来记录这个主机上是有这个子网网段的
-
 ```
 
 
