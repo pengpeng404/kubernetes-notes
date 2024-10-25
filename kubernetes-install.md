@@ -258,6 +258,19 @@ kubectl get node -A
 ~~~
 
 
+```shell
+
+nano /etc/containerd/config.toml
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["httpoud.com"]
+
+systemctl daemon-reload
+systemctl restart containerd
+
+
+```
+
 
 ```shell
 ctr -n k8s.io images pull
@@ -265,12 +278,35 @@ ctr -n k8s.io images tag
 
 ctr -n k8s.io images import my-image.tar
 
+#ctr -n k8s.io images pull swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nicolaka/netshoot:v0.13
+#ctr -n k8s.io images tag swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nicolaka/netshoot:v0.13 docker.io/nicolaka/netshoot:v0.13
+#ctr -n k8s.io images tag docker.io/nicolaka/netshoot:v0.13 docker.io/library/nicolaka/netshoot:v0.1
+
+```
+
+
+```shell
+visudo
+
+cadmin ALL=(ALL) NOPASSWD:ALL
+
+
+
+sudo nano ~/.bashrc
+
+alias k="kubectl"
+alias ks="kubectl -n kube-system"
+
+source ~/.bashrc
+
 ```
 
 
 
+```shell
 
-
+this
+```
 
 
 
