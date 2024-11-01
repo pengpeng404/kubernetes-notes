@@ -406,6 +406,9 @@ ctr -n k8s.io images import my-image.tar
 #ctr -n k8s.io images tag swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nicolaka/netshoot:v0.13 docker.io/nicolaka/netshoot:v0.13
 #ctr -n k8s.io images tag docker.io/nicolaka/netshoot:v0.13 docker.io/library/nicolaka/netshoot:v0.1
 
+
+#ctr -n k8s.io images pull swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/calico/kube-controllers:v3.27.3
+#ctr -n k8s.io images tag swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/calico/kube-controllers:v3.27.3 docker.io/library/calico/kube-controllers:v3.27.3
 ```
 
 
