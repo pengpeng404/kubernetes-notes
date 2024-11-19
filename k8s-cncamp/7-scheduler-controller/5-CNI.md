@@ -249,7 +249,7 @@ ip r
 # 不同的计算节点 bird 有长链接 互相交换彼此的路由表
 # 同样的
 
-ip r
+ip r 
 #default via 10.0.2.1 dev enp0s3 proto dhcp src 10.0.2.12 metric 100 
 #10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.12 metric 100 
 #10.0.2.1 dev enp0s3 proto dhcp scope link src 10.0.2.12 metric 100 

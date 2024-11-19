@@ -240,7 +240,14 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 
 
+```shell
+k get crds
+k get <crd-name>
+k delete <crd-name> <crd-resource-name>
 
+
+
+```
 
 
 
