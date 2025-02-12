@@ -83,7 +83,7 @@ PUT
 /registry/pods/default/nginx-bdf578756-gkx5s
 k8s
 
-v1Pod�
+v1Pod
 ..............
 ```
 
